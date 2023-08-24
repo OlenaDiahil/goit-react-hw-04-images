@@ -1,74 +1,65 @@
 import ImageGalleryItem from "components/ImageGalleryItem/ImageGalleryItem";
 import {fetchImages} from "../../api/img"
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Button from "components/Button/Button";
 import Modal from "components/Modal/Modal";
 import { Gallery } from "./ImageGallery.styled";
 import Loader from "components/Loader/Loader";
 
-export default class ImageGallery extends React.Component {
-  state = {
-    images: [],
-    currentPage: 1,
-    showModal: false,
-    selectedImage: '',
-    isLoading: false,
-  };
+export default function ImageGallery({query}) {
+  const [images, setImages] = useState([]);
+  const [currentPage, setCurrentPage] = useState (1);
+  const [showModal, setShowModal] = useState (false);
+  const [selectedImage, setSelectedImage] = useState ('');
+  const [isLoading, setIsLoading] = useState (false);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevProps.query !== this.props.query) {
-      this.setState({ images: [], currentPage: 1 }, () => {
-        this.fetchImages(); 
-      });
-    }
-  }
+  useEffect(() => {
+    setImages([]);
+    setCurrentPage(1);
+    fetchImages();
+  }, [query]);
 
-  fetchImages = () => {
-    const { query } = this.props;
-    const { currentPage } = this.state;
+  const fetchImg = () => {
 
-    this.setState({ isLoading: true });
+    setIsLoading(true);
 
-    fetchImages(query, currentPage) // Передаємо поточне значення currentPage до функції fetchImages
+    fetchImages(query, currentPage) 
       .then(images => {
-        this.setState(prevState => ({
-          images: [...prevState.images, ...images],
-          currentPage: prevState.currentPage + 1,
-        }));
+        setImages(prevState => [...prevState.images, ...images]);
+        setCurrentPage(prevState => prevState.currentPage + 1);
       })
       .finally(() => {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       });
   };
 
-  handleImageClick = (largeImageURL) => {
-    this.setState({ selectedImage: largeImageURL, showModal: true });
+  const handleImageClick = (largeImageURL) => {
+    setSelectedImage(largeImageURL);
+    setShowModal(true);
   };
 
-  handleCloseModal = () => {
-    this.setState({ selectedImage: '', showModal: false });
+  const handleCloseModal = () => {
+    setSelectedImage('');
+    setShowModal(false);
   };
 
-  render() {
-    const { images, isLoading, showModal, selectedImage } = this.state;
-    const showLoadMoreButton = images.length > 0 && !isLoading;
+  const showLoadMoreButton = images.length > 0 && !isLoading;
 
-    return (
-      <div>
-        <Gallery>
-          {images.map(({ id, webformatURL, largeImageURL }) => (
-            <ImageGalleryItem
-              key={id}
-              webformatURL={webformatURL}
-              onClick={() => this.handleImageClick(largeImageURL)}
-            />
-          ))}
-        </Gallery>
-        {isLoading && <Loader />}
-        {showLoadMoreButton && <Button onClick={this.fetchImages} />}
-        {showModal && <Modal largeImageURL={selectedImage} onClose={this.handleCloseModal} />}
-      </div>
-    );
-  }
+  return (
+    <div>
+      <Gallery>
+        {images.map(({ id, webformatURL, largeImageURL }) => (
+          <ImageGalleryItem
+            key={id}
+            webformatURL={webformatURL}
+            onClick={() => handleImageClick(largeImageURL)}
+          />
+        ))}
+      </Gallery>
+      {isLoading && <Loader />}
+      {showLoadMoreButton && <Button onClick={fetchImg} />}
+      {showModal && <Modal largeImageURL={selectedImage} onClose={handleCloseModal} />}
+    </div>
+  );
 }
 
